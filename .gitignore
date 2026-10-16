@@ -12,3 +12,5 @@ logs/
 dbt/**/target/
 dbt/**/dbt_packages/
 dbt/**/logs/
+
+.user.yml
