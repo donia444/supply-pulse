@@ -1,0 +1,66 @@
+version: 2
+
+models:
+  - name: stg_catalog_pim__products
+    description: "Cleaned product catalog. One row per product_id."
+
+    # Model-level tests: a single data_tests key, same level as `columns:`
+    data_tests:
+
+      # No NULL-like text should survive in brand (clean_null must have converted it)
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "brand is null or brand not in ('', 'null', 'NULL', 'N/A', 'nan', 'None', '-')"
+
+      # Invalid barcodes are flagged on purpose (e.g. P00055), so this only warns
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "is_valid_barcode"
+          config:
+            severity: warn
+
+      # fix_upper_case must have left no fully upper-case product names
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "product_name is null or product_name <> upper(product_name)"
+
+      # Every non-null raw category must have found a match in the seed
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "category_raw is null or category is not null"
+
+    columns:
+      - name: product_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: barcode
+        data_tests:
+          - unique:
+              config:
+                severity: warn   # P00114 duplicates P00051; resolved in int_item__unioned
+
+      - name: category
+        description: "Standard category label from the map_product_category seed."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Baby Care', 'Bakery', 'Beverages', 'Dairy & Eggs', 'Fruits & Vegetables',
+                         'Household', 'Meat & Poultry', 'Pantry', 'Personal Care', 'Snacks']
+
+      - name: category_raw
+        description: "Original category text, kept for auditing."
+
+      - name: base_price_egp
+        data_tests:
+          - not_null
+
+      - name: is_perishable
+        data_tests:
+          - not_null
+
+      - name: is_active
+        data_tests:
+          - not_null
+          

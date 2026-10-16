@@ -1,0 +1,23 @@
+{
+  "name": "qcommerce-cdc",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "plugin.name": "pgoutput",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "cdc_user",
+    "database.password": "cdc_pass",
+    "database.dbname": "qcommerce",
+    "topic.prefix": "ops",
+    "schema.include.list": "public,partners_system,catalog_pim,restaurant_portal,customer_app,wms",
+    "publication.name": "qcommerce_pub",
+    "publication.autocreate.mode": "disabled",
+    "slot.name": "debezium_qcommerce",
+    "snapshot.mode": "initial",
+    "tombstones.on.delete": "false",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false"
+  }
+}

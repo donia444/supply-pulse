@@ -1,0 +1,11 @@
+raw_value,clean_value
+api,API
+direct api,API
+wms,WMS
+manual_portal,MANUAL_PORTAL
+manual,MANUAL_PORTAL
+portal,MANUAL_PORTAL
+vendor portal,MANUAL_PORTAL
+pos_legacy,POS_LEGACY
+pos,POS_LEGACY
+pos (legacy),POS_LEGACY

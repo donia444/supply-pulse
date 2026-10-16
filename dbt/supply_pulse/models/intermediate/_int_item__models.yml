@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: int_item__unioned
+    description: >
+      Unified item list from catalog_pim products and restaurant_portal menu items.
+      One row per item. Duplicate products are handled in the next step.
+    columns:
+      - name: item_ref
+        description: Normalized item reference (SKU-##### or M#######).
+        data_tests:
+          - unique
+          - not_null
+      - name: item_source
+        description: Source system of the item.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['catalog_pim', 'restaurant_portal']
+
+
+      - name: barcode
+        description: EAN-13 barcode (NULL for restaurant menu items).
+        data_tests:
+          - unique:
+              config:
+                where: "barcode is not null"          

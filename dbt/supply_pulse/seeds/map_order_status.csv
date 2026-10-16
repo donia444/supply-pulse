@@ -1,0 +1,16 @@
+raw_value,clean_value
+delivered,delivered
+done,delivered
+completed,delivered
+fulfilled,delivered
+cancelled,cancelled
+canceled,cancelled
+cancelled_by_customer,cancelled
+rejected,cancelled
+void,cancelled
+failed,failed
+delivery_failed,failed
+undelivered,failed
+refunded,refunded
+refund,refunded
+returned,refunded

@@ -1,0 +1,39 @@
+# dbt_project.yml - the main settings file. dbt reads it first.
+# It says: project name, which connection profile to use, and where each layer is built.
+
+name: supply_pulse
+version: '1.0.0'
+config-version: 2
+require-dbt-version: [">=1.12.0", "<1.13.0"]   # whole team must use dbt Core 1.12.x
+
+profile: supply_pulse          # must match the top key in profiles.yml
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+analysis-paths: ["analyses"]
+
+vars:
+  # Time the raw files were extracted; any event later than this is impossible
+  # ("future" injected defects) and is turned into NULL by the staging models.
+  data_cutoff_ts: '2026-10-01 00:00:00'
+
+clean-targets: ["target", "dbt_packages"]     # created by dbt itself, never committed
+
+# Where each layer is built (schema names come from macros/generate_schema_name.sql):
+#   target dev / prod : staging + intermediate -> SILVER (views), marts -> GOLD (tables)
+#   target shared     : personal prefix, e.g. DBT_DONIA_silver / DBT_DONIA_gold,
+#                       so teammates sharing one account never overwrite each other.
+#   seeds (no +schema): the schema set in profiles.yml (DBT_DONIA on dev/shared, PROD on prod)
+models:
+  supply_pulse:
+    staging:
+      +materialized: view
+      +schema: silver
+    intermediate:
+      +materialized: view
+      +schema: silver
+    marts:
+      +materialized: table
+      +schema: gold

@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: stg_restaurant_portal__menu_items
+    description: "Cleaned restaurant menu items. One row per menu_item_id."
+
+    # Model-level tests: a single data_tests key, same level as `columns:`
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            # fix_upper_case must have left no fully upper-case item names
+            expression: "item_name is null or item_name != upper(item_name)"
+      - dbt_utils.expression_is_true:
+          arguments:
+            # every non-null raw section must have found a match in the seed
+            expression: "menu_section_raw is null or menu_section is not null"
+
+    columns:
+      - name: menu_item_id
+        description: "Business key of the menu item."
+        data_tests:
+          - unique          # dedupe step must leave one row per id
+          - not_null
+
+      - name: vendor_id
+        description: "Restaurant that owns the item."
+        data_tests:
+          - not_null:
+              config:
+                severity: warn   # nulls not checked in profiling yet
+
+      - name: item_name
+        description: "Item name after trimming, NULL cleanup and case fix."
+        data_tests:
+          - not_null:
+              config:
+                severity: warn   # raw 'NULL' text becomes a real NULL
+
+      - name: menu_section
+        description: "Standard section label from the map_menu_section seed."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Burgers', 'Desserts', 'Drinks', 'Grills', 'Koshary',
+                         'Mains', 'Pizza', 'Plates', 'Sandwiches', 'Sides']
+
+      - name: menu_section_raw
+        description: "Original section text, kept for auditing."
+
+      - name: price_egp
+        description: "Item price in EGP (piasters already converted)."
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false     # a price must be above zero
+              config:
+                severity: warn
+
+      - name: is_vegetarian
+        description: "Standardized boolean flag."
+        data_tests:
+          - not_null:
+              config:
+                severity: warn

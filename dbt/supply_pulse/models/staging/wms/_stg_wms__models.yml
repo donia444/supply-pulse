@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: stg_wms__inventory_movements
+    description: >
+      Cleaned stock movements. One row per movement_id. Signed quantity (SALE / WASTE negative),
+      UTC timestamps, standard movement types; unrepairable values are NULL and explained in dq_issues.
+    data_tests:
+      # warehouse codes follow one format
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "warehouse_code is null or regexp_like(warehouse_code, 'WH-[0-9]{4}')"
+      # outbound movements must be negative and inbound positive after the sign fix
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "quantity is null or not ((movement_type in ('SALE','WASTE') and quantity > 0) or (movement_type in ('RESTOCK','OPENING_BALANCE') and quantity < 0))"
+    columns:
+      - name: movement_id
+        data_tests:
+          - unique
+          - not_null:
+              config:
+                severity: warn
+      - name: movement_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['OPENING_BALANCE', 'RESTOCK', 'SALE', 'WASTE', 'ADJUSTMENT']
+      - name: dq_flag
+        data_tests:
+          - not_null

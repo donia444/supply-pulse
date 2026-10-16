@@ -1,0 +1,60 @@
+version: 2
+
+seeds:
+  # --- Mappings for items / menus (existing) ---
+  - name: map_menu_section
+    description: "Maps every raw menu_section spelling (lower-cased) to one standard label."
+    columns: &map_columns
+      - name: raw_value
+        data_tests:
+          - unique      # one row per raw spelling, otherwise the join would duplicate rows
+          - not_null
+      - name: clean_value
+        data_tests:
+          - not_null
+
+  - name: map_product_category
+    description: "Maps every raw product category spelling (lower-cased) to one standard label."
+    columns: *map_columns
+
+  # --- Mappings for customers / orders (from the teammate's bundle) ---
+  - name: map_order_status
+    columns: *map_columns
+
+  - name: map_payment_method
+    columns: *map_columns
+
+  - name: map_cancel_reason
+    columns: *map_columns
+
+  - name: map_delivery_zone
+    columns: *map_columns
+
+  - name: map_city
+    columns: *map_columns
+
+  # --- Mappings for vendors / inventory / vendor-item events (answer-key labels) ---
+  - name: map_vendor_type
+    description: "Raw vendor type spelling (lower-cased) -> restaurant / supermarket / dark_store / pharmacy."
+    columns: *map_columns
+
+  - name: map_integration_type
+    description: "Raw integration label -> API / WMS / MANUAL_PORTAL / POS_LEGACY (POS_LEGACY prices are in piasters)."
+    columns: *map_columns
+
+  - name: map_vendor_status
+    description: "Raw status flag -> active / inactive."
+    columns: *map_columns
+
+  - name: map_cuisine
+    description: "Cuisine labels that must be renamed. Labels not listed are kept as written."
+    columns: *map_columns
+
+  - name: map_movement_type
+    description: "Raw movement type -> OPENING_BALANCE / RESTOCK / SALE / WASTE / ADJUSTMENT."
+    columns: *map_columns
+
+  - name: map_currency
+    description: "Raw currency code -> EGP or PT (piasters)."
+    columns: *map_columns
+

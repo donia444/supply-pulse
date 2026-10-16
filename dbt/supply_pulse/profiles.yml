@@ -1,0 +1,53 @@
+# profiles.yml - HOW dbt connects to Snowflake. Safe to commit: no secret is written here,
+# every value is read from environment variables (never commit the real values).
+#
+# Pick the target with  --target  (default = dev):
+#   dev     -> YOUR personal Snowflake account   (your own playground)
+#   shared  -> the team's shared account, but YOUR own schemas (DBT_DONIA_silver / DBT_DONIA_gold)
+#   prod    -> the shared account, the FINAL schemas SILVER / GOLD. Run by one person (or Airflow) only.
+
+supply_pulse:
+  target: dev                      # keep dev as the default so nothing changes by accident
+  outputs:
+
+    dev:
+      type: snowflake
+      account:   "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user:      "{{ env_var('SNOWFLAKE_USER') }}"
+      password:  "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      authenticator: "{{ env_var('SNOWFLAKE_AUTHENTICATOR', 'snowflake') }}"   # snowflake = password
+      role:      "{{ env_var('SNOWFLAKE_ROLE', 'SYSADMIN') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'QC_WH') }}"
+      database:  "{{ env_var('SNOWFLAKE_DATABASE', 'SUPPLY_CHAIN_DB') }}"
+      schema:    "{{ env_var('DBT_SCHEMA') }}"                                # e.g. DBT_DONIA
+      threads: 4
+      reuse_connections: true          # one login (one MFA push) per run, not one per model
+      client_session_keep_alive: false
+
+    shared:
+      type: snowflake
+      account:   "{{ env_var('SHARED_SNOWFLAKE_ACCOUNT') }}"
+      user:      "{{ env_var('SHARED_SNOWFLAKE_USER') }}"
+      password:  "{{ env_var('SHARED_SNOWFLAKE_PASSWORD') }}"
+      authenticator: "{{ env_var('SHARED_SNOWFLAKE_AUTHENTICATOR', 'snowflake') }}"
+      role:      "{{ env_var('SHARED_SNOWFLAKE_ROLE') }}"
+      warehouse: "{{ env_var('SHARED_SNOWFLAKE_WAREHOUSE') }}"
+      database:  "{{ env_var('SHARED_SNOWFLAKE_DATABASE', 'SUPPLY_PULSE_DB') }}"
+      schema:    "{{ env_var('DBT_SCHEMA') }}"
+      threads: 4
+      reuse_connections: true
+      client_session_keep_alive: false
+
+    prod:
+      type: snowflake
+      account:   "{{ env_var('SHARED_SNOWFLAKE_ACCOUNT') }}"
+      user:      "{{ env_var('SHARED_SNOWFLAKE_USER') }}"
+      password:  "{{ env_var('SHARED_SNOWFLAKE_PASSWORD') }}"
+      authenticator: "{{ env_var('SHARED_SNOWFLAKE_AUTHENTICATOR', 'snowflake') }}"
+      role:      "{{ env_var('SHARED_SNOWFLAKE_ROLE') }}"
+      warehouse: "{{ env_var('SHARED_SNOWFLAKE_WAREHOUSE') }}"
+      database:  "{{ env_var('SHARED_SNOWFLAKE_DATABASE', 'SUPPLY_PULSE_DB') }}"
+      schema:    PROD                  # -> PROD_SILVER / PROD_GOLD (final names to be agreed)
+      threads: 4
+      reuse_connections: true
+      client_session_keep_alive: false

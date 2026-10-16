@@ -1,0 +1,21 @@
+raw_value,clean_value
+opening_balance,OPENING_BALANCE
+opening,OPENING_BALANCE
+ob,OPENING_BALANCE
+initial_stock,OPENING_BALANCE
+restock,RESTOCK
+grn,RESTOCK
+inbound,RESTOCK
+goods_received,RESTOCK
+sale,SALE
+outbound,SALE
+pick,SALE
+order_pick,SALE
+waste,WASTE
+expired,WASTE
+damage,WASTE
+write_off,WASTE
+adjustment,ADJUSTMENT
+adj,ADJUSTMENT
+cycle_count,ADJUSTMENT
+stock count,ADJUSTMENT

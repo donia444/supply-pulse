@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: stg_partners_system__vendors
+    description: >
+      Cleaned vendors. One row per vendor_id. Labels mapped with seeds, commission / rating /
+      dates repaired with the answer-key rules; unrepairable values are NULL and explained in dq_issues.
+    data_tests:
+      # every raw label must have found its mapping (a new spelling means: add it to the seed)
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "dq_issues is null or not regexp_like(dq_issues, '.*(vendor_type|integration_type|status)_unmapped.*')"
+    columns:
+      - name: vendor_id
+        data_tests:
+          - unique
+          - not_null:
+              config:
+                severity: warn
+      - name: vendor_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['restaurant', 'supermarket', 'dark_store', 'pharmacy']
+      - name: integration_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['API', 'WMS', 'MANUAL_PORTAL', 'POS_LEGACY']
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['active', 'inactive']
+      - name: commission_pct
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 100
+      - name: rating
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 5
+      - name: dq_flag
+        data_tests:
+          - not_null

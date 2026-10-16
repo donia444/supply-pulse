@@ -1,0 +1,30 @@
+raw_value,clean_value
+customer_cancelled,customer_cancelled
+customer request,customer_cancelled
+customer,customer_cancelled
+cancelled_by_customer,customer_cancelled
+customer_unreachable,customer_unreachable
+customer unreachable,customer_unreachable
+customer_no_show,customer_unreachable
+item_unavailable,item_unavailable
+item unavailable,item_unavailable
+item not available,item_unavailable
+out_of_stock,item_unavailable
+oos,item_unavailable
+missing_item,missing_item
+missing item,missing_item
+missing_items,missing_item
+payment_failed,payment_failed
+payment failed,payment_failed
+payment_declined,payment_failed
+quality_issue,quality_issue
+quality issue,quality_issue
+bad_quality,quality_issue
+food_quality,quality_issue
+rider_unavailable,rider_unavailable
+rider unavailable,rider_unavailable
+no_rider,rider_unavailable
+vendor_busy,vendor_busy
+vendor busy,vendor_busy
+restaurant_busy,vendor_busy
+store_busy,vendor_busy

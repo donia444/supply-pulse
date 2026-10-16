@@ -1,0 +1,6 @@
+# Python packages for the dbt / Snowflake side. EXACT same versions for the whole team.
+#   pip install -r requirements-dbt.txt
+# Versions = what the team is already running (dbt Core 1.12.5, Snowflake adapter 1.12.1).
+dbt-core==1.12.5
+dbt-snowflake==1.12.1
+python-dotenv>=1.0

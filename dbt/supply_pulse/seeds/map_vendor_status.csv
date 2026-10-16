@@ -1,0 +1,14 @@
+raw_value,clean_value
+active,active
+1,active
+y,active
+yes,active
+true,active
+enabled,active
+live,active
+inactive,inactive
+0,inactive
+n,inactive
+no,inactive
+false,inactive
+disabled,inactive

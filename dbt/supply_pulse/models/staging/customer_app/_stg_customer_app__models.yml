@@ -1,0 +1,78 @@
+version: 2
+
+models:
+  - name: stg_customer_app__order_items
+    description: >
+      Cleaned order lines. One row per (order_id, line_number).
+      Exact duplicates removed, ids normalized, numbers typed, piasters fixed
+      in line_total, zero/negative quantities rebuilt from line_total / unit_price
+      when possible, and missing unit_price rebuilt from line_total / quantity.
+
+   
+    data_tests:
+      # Grain: one row per (order_id, line_number)
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [order_id, line_number]
+
+      # item_ref must be SKU-##### or M#######
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "regexp_like(item_ref, '^(SKU-[0-9]{5}|M[0-9]{7})$')"
+
+      # No ALL-UPPER item names should remain
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "item_name is null or item_name != upper(item_name)"
+
+      # Core business rule: line_total = quantity * unit_price.
+      # It held on 100% of valid rows, so it also proves that no piasters are left.
+      # Skipped when unit_price was rebuilt (it matches by construction) or the
+      # quantity is still invalid (the 40 rows without unit_price).
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "is_unit_price_rebuilt or quantity is null or quantity <= 0 or abs(line_total - quantity * unit_price) < 0.01"
+
+
+    columns:
+      - name: order_id
+        data_tests:
+          - not_null
+
+      - name: line_number
+        data_tests:
+          - not_null
+
+      - name: quantity
+        description: >
+        data_tests:
+          - not_null
+          # Normal range is 1..10 (observed max is 4). Rows still zero/negative
+          # (about 40) show up as a warning, not an error.
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 10
+              config:
+                severity: warn
+
+      - name: is_quantity_rebuilt
+        data_tests:
+          - not_null
+
+      - name: unit_price
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+              config:
+                severity: warn
+
+      - name: is_unit_price_rebuilt
+        data_tests:
+          - not_null
+
+      - name: vendor_confirmed_price
+        data_tests:
+          - not_null

@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: int_vendor_items__events
+    description: >
+      Vendor-item events with price in EGP (POS_LEGACY piasters / 100), item_type and the QA gate
+      decision (gate_result PASS / REJECT + reject_reason), matching the streaming QA gate.
+    columns:
+      - name: event_id
+        data_tests:
+          - unique:
+              config:
+                severity: warn
+          - not_null
+      - name: gate_result
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['PASS', 'REJECT']
+      - name: reject_reason
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['NULL_ITEM_NAME', 'NON_POSITIVE_PRICE', 'PRICE_OUTLIER', 'NEGATIVE_STOCK']
+      - name: item_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['grocery', 'menu']

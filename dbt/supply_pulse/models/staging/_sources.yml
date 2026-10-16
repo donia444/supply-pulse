@@ -1,0 +1,61 @@
+# Source definitions for ALL staging models (the whole team's project).
+# The same dbt source names are used in every environment; only the physical
+# location changes:
+#   dev            -> personal account, SUPPLY_CHAIN_DB.RAW, short table names,
+#                     one row per record (static load, no CDC columns)
+#   shared / prod  -> team account, SUPPLY_PULSE_DB.BRONZE, prefixed view names,
+#                     one row per CDC EVENT (extra columns CDC_OP, KAFKA_OFFSET, KAFKA_TS)
+# The database itself comes from the target in profiles.yml.
+version: 2
+
+sources:
+
+  - name: catalog_pim
+    database: "{{ target.database }}"
+    schema: "{{ 'BRONZE' if target.name in ['shared', 'prod'] else 'RAW' }}"
+    tables:
+      - name: products
+        identifier: "{{ 'CATALOG_PIM_PRODUCTS' if target.name in ['shared', 'prod'] else 'products' }}"
+
+  - name: restaurant_portal
+    database: "{{ target.database }}"
+    schema: "{{ 'BRONZE' if target.name in ['shared', 'prod'] else 'RAW' }}"
+    tables:
+      - name: menu_items
+        identifier: "{{ 'RESTAURANT_PORTAL_MENU_ITEMS' if target.name in ['shared', 'prod'] else 'menu_items' }}"
+
+  - name: customer_app
+    database: "{{ target.database }}"
+    schema: "{{ 'BRONZE' if target.name in ['shared', 'prod'] else 'RAW' }}"
+    tables:
+      - name: customers
+        identifier: "{{ 'CUSTOMER_APP_CUSTOMERS' if target.name in ['shared', 'prod'] else 'customers' }}"
+      - name: orders
+        identifier: "{{ 'CUSTOMER_APP_ORDERS' if target.name in ['shared', 'prod'] else 'orders' }}"
+      - name: order_items
+        identifier: "{{ 'CUSTOMER_APP_ORDER_ITEMS' if target.name in ['shared', 'prod'] else 'order_items' }}"
+
+  - name: partners_system
+    database: "{{ target.database }}"
+    schema: "{{ 'BRONZE' if target.name in ['shared', 'prod'] else 'RAW' }}"
+    tables:
+      - name: vendors
+        identifier: "{{ 'PARTNERS_SYSTEM_VENDORS' if target.name in ['shared', 'prod'] else 'vendors' }}"
+
+  - name: wms
+    database: "{{ target.database }}"
+    schema: "{{ 'BRONZE' if target.name in ['shared', 'prod'] else 'RAW' }}"
+    tables:
+      - name: inventory_movements
+        identifier: "{{ 'WMS_INVENTORY_MOVEMENTS' if target.name in ['shared', 'prod'] else 'inventory_movements' }}"
+
+  # Price / availability / stock events of every store item.
+  # Column names differ between the two accounts; stg_ops_db_cdc__vendor_items_events maps them:
+  #   RAW    : LSN,     OP,     CAPTURED_AT_MS (epoch milliseconds)
+  #   BRONZE : SRC_LSN, CDC_OP, KAFKA_TS       (timestamp, UTC)
+  - name: ops_db_cdc
+    database: "{{ target.database }}"
+    schema: "{{ 'BRONZE' if target.name in ['shared', 'prod'] else 'RAW' }}"
+    tables:
+      - name: vendor_items_events
+        identifier: "{{ 'PUBLIC_VENDOR_ITEMS' if target.name in ['shared', 'prod'] else 'vendor_items_events' }}"

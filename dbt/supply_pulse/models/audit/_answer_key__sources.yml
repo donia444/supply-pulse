@@ -1,0 +1,12 @@
+# The course answer key, loaded once into Snowflake (schema ANSWER_KEY, every column VARCHAR).
+# Used ONLY by the audit queries in analyses/ ; no model depends on it, so builds work without it.
+version: 2
+
+sources:
+  - name: answer_key
+    database: "{{ target.database }}"
+    schema: ANSWER_KEY
+    tables:
+      - name: dq_manifest            # dq_manifest.csv: one row per known data defect + its clean value
+      - name: scenario_events        # scenario_events.csv: expected QA-gate result per CDC event
+      - name: expected_scd2          # expected_scd2_vendor_items.csv: expected SCD2 versions

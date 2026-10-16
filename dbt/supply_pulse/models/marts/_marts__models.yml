@@ -1,0 +1,312 @@
+version: 2
+
+models:
+  - name: dim_item
+    description: "Item dimension. One row per item (catalog products and restaurant menu items)."
+    columns:
+      - name: item_key
+        description: "Surrogate key (hash of item_ref). Used by fact tables."
+        data_tests:
+          - unique
+          - not_null
+
+      - name: item_ref
+        description: "Business key of the item."
+        data_tests:
+          - unique
+          - not_null
+
+      - name: item_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['grocery', 'menu', 'unknown']
+
+
+  - name: fact_order_items
+    description: "Order line facts. One row per (order_id, line_number)."
+
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [order_id, line_number]
+      # The join to dim_item must not add or drop rows
+      - dbt_utils.equal_rowcount:
+          arguments:
+            compare_model: ref('stg_customer_app__order_items')
+
+    columns:
+      - name: order_key
+        data_tests:
+          - not_null
+          # Every order line must belong to an order in fact_orders (same hash on both sides)
+          - relationships:
+              arguments:
+                to: ref('fact_orders')
+                field: order_key
+
+      - name: item_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_item')
+                field: item_key
+          # Lines pointing to the Unknown member mean an item is missing from dim_item
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "!= '-1'"
+              config:
+                severity: warn
+
+      - name: quantity
+        description: "Valid quantity 1-10; 40 lines stay invalid (no price to rebuild from)."
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 10
+              config:
+                severity: warn   # the known 40 invalid lines
+
+      - name: is_stale_price
+        data_tests:
+          - not_null
+
+
+  - name: dim_date
+    columns:
+      - name: date_key
+        data_tests:
+          - unique
+          - not_null
+      - name: full_date
+        data_tests:
+          - unique
+      - name: is_weekend
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [true, false]
+              config:
+                severity: warn
+
+
+  - name: dim_customer
+    description: "Grain: one row per customer account, plus one Unknown row with key -1."
+    columns:
+      - name: customer_key
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_id
+        data_tests:
+          - unique
+          - not_null
+
+      # signup_date_key must exist in dim_date (-1 = missing signup date)
+      - name: signup_date_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key    
+
+  - name: dim_order_profile
+    description: "Junk dimension. Grain: one row per payment method x status x cancel reason, plus Unknown."
+    columns:
+      - name: order_profile_key
+        data_tests:
+          - unique
+          - not_null
+
+  - name: fact_orders
+    description: "Grain: one row per order."
+    columns:
+      - name: order_key
+        data_tests:
+          - unique
+          - not_null
+
+      - name: customer_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+
+      - name: vendor_key
+        data_tests:
+          - not_null
+          # Every order's vendor should exist in dim_vendor. Warn first: unmatched
+          # vendor ids in orders are a data finding, not a model error.
+          - relationships:
+              arguments:
+                to: ref('dim_vendor')
+                field: vendor_key
+              config:
+                severity: warn
+
+      - name: order_profile_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_order_profile')
+                field: order_profile_key
+
+      # Date keys must exist in dim_date (-1 = missing date, which dim_date also holds)
+      - name: order_date_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+      - name: delivered_date_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+      - name: line_count
+        description: "Number of order lines (0 when the order has no lines)."
+        data_tests:
+          - not_null
+
+
+  # ---------------------------------------------------------------------------
+  # Vendor / inventory / listing models
+  # ---------------------------------------------------------------------------
+
+  - name: dim_vendor
+    description: "One row per vendor (current state, SCD Type 1) plus the Unknown row ('-1'). Unrepairable values are NULL and listed in dq_issues."
+    columns:
+      - name: vendor_key
+        description: "Hash of vendor_id, built the same way as fact_orders.vendor_key."
+        data_tests:
+          - unique
+          - not_null
+      - name: vendor_id
+        data_tests:
+          - unique
+          - not_null
+
+  - name: dim_vendor_item_history
+    description: "SCD Type 2 history of price and availability per vendor item, built from QA-gate PASS events on business time. One row per version; valid_to is NULL for the current version."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [vendor_id, item_ref, version_number]
+    columns:
+      - name: vendor_item_version_key
+        data_tests:
+          - unique
+          - not_null
+      - name: vendor_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_vendor')
+                field: vendor_key
+      - name: item_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_item')
+                field: item_key
+      - name: price_egp
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+      - name: valid_from
+        data_tests:
+          - not_null
+      - name: is_current
+        data_tests:
+          - not_null
+
+  - name: fact_inventory_movement
+    description: "One row per stock movement (all rows kept, dq_flag marks repaired / missing values). Quantity is signed."
+    columns:
+      - name: movement_id
+        data_tests:
+          - unique
+          - not_null:
+              config:
+                severity: warn
+      - name: item_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_item')
+                field: item_key
+          # movements pointing to the Unknown item mean a barcode could not be matched to the catalog
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "!= '-1'"
+              config:
+                severity: warn
+      - name: vendor_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_vendor')
+                field: vendor_key
+      - name: movement_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+  - name: fact_listing_change
+    description: "One row per CDC event on a vendor item, including events rejected by the QA gate (see gate_result / reject_reason)."
+    columns:
+      - name: event_id
+        data_tests:
+          - unique:
+              config:
+                severity: warn
+          - not_null
+      - name: change_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: vendor_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_vendor')
+                field: vendor_key
+      - name: item_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_item')
+                field: item_key
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "!= '-1'"
+              config:
+                severity: warn
+      - name: gate_result
+        data_tests:
+          - not_null

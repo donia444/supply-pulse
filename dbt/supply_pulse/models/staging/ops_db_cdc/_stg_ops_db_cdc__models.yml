@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: stg_ops_db_cdc__vendor_items_events
+    description: >
+      One row per CDC event on a vendor item (an event delivered twice is kept once).
+      Full history on purpose (feeds the SCD Type 2 dimension). event_time_utc = business time in UTC.
+    columns:
+      - name: event_id
+        data_tests:
+          - unique:
+              config:
+                severity: warn
+          - not_null
+      - name: op
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['c', 'u', 'd', 'r']
+              config:
+                severity: warn
+      - name: currency
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['EGP', 'PT']
+              config:
+                severity: warn
+      - name: is_processable
+        data_tests:
+          - not_null

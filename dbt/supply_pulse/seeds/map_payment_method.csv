@@ -1,0 +1,15 @@
+raw_value,clean_value
+cash,cash
+cod,cash
+cash on delivery,cash
+cash_on_delivery,cash
+كاش,cash
+card,card
+credit card,card
+credit_card,card
+visa,card
+online_card,card
+wallet,wallet
+mobile wallet,wallet
+e-wallet,wallet
+vodafone_cash,wallet

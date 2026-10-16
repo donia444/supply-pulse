@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: stg_customer_app__customers
+    description: "Silver customer model. Grain: one row per customer account."
+    columns:
+      - name: customer_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: city
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Cairo', 'Giza', 'Alexandria', 'Unknown']
+
+  - name: stg_customer_app__orders
+    description: "Silver orders model. Grain: one row per order_id."
+    columns:
+      - name: order_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['delivered', 'cancelled', 'failed', 'refunded', 'unknown']
+
+      - name: payment_method
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['cash', 'card', 'wallet', 'unknown']
+
+      - name: vendor_id
+        data_tests:
+          - not_null
+
+      - name: customer_rating
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+
+      # Money columns: these tests fail if the repair rules ever stop working.
+      - name: subtotal
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 10000      # the largest real subtotal is about 4,700 EGP; a piaster value would be 100 times bigger
+
+      - name: discount_amount
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+
+      - name: service_fee
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 15
+
+      - name: total_amount
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0

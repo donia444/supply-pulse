@@ -1,0 +1,14 @@
+﻿.env
+*.pem
+*.p8
+*.key
+rsa_key*
+data/
+__pycache__/
+*.pyc
+.venv/
+venv/
+logs/
+dbt/**/target/
+dbt/**/dbt_packages/
+dbt/**/logs/

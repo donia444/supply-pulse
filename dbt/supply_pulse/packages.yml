@@ -1,0 +1,4 @@
+# Extra dbt libraries. Install / update with:  dbt deps
+packages:
+  - package: dbt-labs/dbt_utils          # generate_surrogate_key, unique_combination_of_columns, date_spine ...
+    version: [">=1.3.0", "<2.0.0"]
